@@ -4,8 +4,9 @@
 
 # Packages:
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import asyncio
+from telegram.ext import filters, MessageHandler, Application, CommandHandler, CallbackQueryHandler, ContextTypes
+
+from datetime import datetime, timedelta
 
 # Set up logging
 import logging
@@ -33,12 +34,18 @@ except ImportError as e:
     logger.error("Fallo importar la configuracion: %s",e)
     sys.exit("Revisar el modulo cfg - revisar si el PATH esta correcto")
 
-
+# Global variables
+# Storing timestamp of the last /start command
+last_start_time = None
 
 ########################### BOT FUNCTIONS ###########################
 
 # Start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    
+    global last_start_time
+    last_start_time = datetime.now()
+    
     keyboard = [
         [InlineKeyboardButton("Option 1", callback_data='1')],
         [InlineKeyboardButton("Option 2", callback_data='2')],
@@ -47,6 +54,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Please choose:', reply_markup=reply_markup)
     logger.info("Start command invoked by user: %s", update.message.from_user.username)
+    
+# Echo handler   
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    global last_start_time
+    
+    if last_start_time is None or datetime.now() - last_start_time > timedelta(minutes=5):
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text="Por favor ingresar /start para usar el bot.")
+    else:
+        pass
+    
 
 # Button callback handler
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -54,13 +73,13 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
 
     if query.data == '1':
-        response_text = "You selected option 1"
+        response_text = "Ha seleccionado opcion 1"
     elif query.data == '2':
-        response_text = "You selected option 2"
+        response_text = "Ha seleccionado opcion 2"
     elif query.data == '3':
-        response_text = "You selected option 3"
+        response_text = "Ha seleccionado opcion 3"
     else:
-        response_text = "Invalid selection"
+        response_text = "Seleccion no valida"
 
     await query.edit_message_text(text=response_text)
     logger.info("User %s selected option %s", query.from_user.username, query.data)
@@ -84,9 +103,9 @@ if __name__ == '__main__':
         application.add_handler(CommandHandler('start', start))
         application.add_handler(CallbackQueryHandler(button))
         application.add_error_handler(error_handler)
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo))
 
         # Start the Bot using run_polling
-        print("line 85 - about to run_polling")
         application.run_polling()
 
     except Exception as e:
