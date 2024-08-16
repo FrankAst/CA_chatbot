@@ -47,16 +47,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     last_start_time = datetime.now()
     
     keyboard = [
-        [InlineKeyboardButton("Option 1", callback_data='1')],
-        [InlineKeyboardButton("Option 2", callback_data='2')],
-        [InlineKeyboardButton("Option 3", callback_data='3')],
+        [InlineKeyboardButton("Soy cliente", callback_data='1')],
+        [InlineKeyboardButton("Nuevos clientes", callback_data='2')],
+        [InlineKeyboardButton("Catalogo", callback_data='3')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    await update.message.reply_text('Elija una opcion', reply_markup=reply_markup)
     logger.info("Start command invoked by user: %s", update.message.from_user.username)
     
-# Echo handler   
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Echo handler  - Indica al usuario como iniciar el bot.
+async def echo_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     global last_start_time
     
@@ -73,11 +73,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
 
     if query.data == '1':
-        response_text = "Ha seleccionado opcion 1"
+        response_text = "Bienvenido"
     elif query.data == '2':
-        response_text = "Ha seleccionado opcion 2"
+        response_text = "Bienvenido! "
     elif query.data == '3':
-        response_text = "Ha seleccionado opcion 3"
+        response_text = "Cargando catalogo.."
     else:
         response_text = "Seleccion no valida"
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         application.add_handler(CommandHandler('start', start))
         application.add_handler(CallbackQueryHandler(button))
         application.add_error_handler(error_handler)
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo_start))
 
         # Start the Bot using run_polling
         application.run_polling()
