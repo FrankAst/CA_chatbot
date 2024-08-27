@@ -21,10 +21,8 @@ logger = logging.getLogger(__name__)
 import sys
 from pathlib import Path
 
-# set path
 directory = Path(__file__).resolve()
 config_path = directory.parent.parent 
-#print(str(config_path)+ "/config")
 
 sys.path.append(str(config_path)+ "/config/")
 
@@ -34,9 +32,17 @@ except ImportError as e:
     logger.error("Fallo importar la configuracion: %s",e)
     sys.exit("Revisar el modulo cfg - revisar si el PATH esta correcto")
 
-# Global variables
+
+########################### GLOBAL VARIALBES ###########################
+
 # Storing timestamp of the last /start command
 last_start_time = None
+
+# User data
+query_type = None #RTV or DTM
+province = None
+
+
 
 ########################### BOT FUNCTIONS ###########################
 
@@ -46,10 +52,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global last_start_time
     last_start_time = datetime.now()
     
+    await context.bot.send_message(chat_id=update.effective_chat.id, 
+                                   text="Bienvenido, por favor indique el motivo de asistencia:")
+    
     keyboard = [
-        [InlineKeyboardButton("Soy cliente", callback_data='1')],
-        [InlineKeyboardButton("Nuevos clientes", callback_data='2')],
-        [InlineKeyboardButton("Catalogo", callback_data='3')],
+        [InlineKeyboardButton("Asistencia comercial", callback_data='1')],
+        [InlineKeyboardButton("Asistencia tecnica", callback_data='2')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Elija una opcion', reply_markup=reply_markup)
@@ -67,22 +75,51 @@ async def echo_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
     
 
-# Button callback handler
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# Button callback handler - Primer filtro. 
+async def query_type_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    
+    global query_type
+    
     query = update.callback_query
     await query.answer()
 
     if query.data == '1':
         response_text = "Bienvenido"
+        query_type = "RTV"
     elif query.data == '2':
-        response_text = "Bienvenido! "
-    elif query.data == '3':
-        response_text = "Cargando catalogo.."
+        response_text = "Bienvenido"
+        query_type = "DTM"
     else:
         response_text = "Seleccion no valida"
 
     await query.edit_message_text(text=response_text)
     logger.info("User %s selected option %s", query.from_user.username, query.data)
+    
+# 
+#async def province_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Error handler
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -101,9 +138,16 @@ if __name__ == '__main__':
 
         # Register command and callback handlers
         application.add_handler(CommandHandler('start', start))
-        application.add_handler(CallbackQueryHandler(button))
-        application.add_error_handler(error_handler)
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo_start))
+        
+        
+        application.add_handler(CallbackQueryHandler(query_type_button))
+        
+        
+        
+        
+        application.add_error_handler(error_handler)
+        
 
         # Start the Bot using run_polling
         application.run_polling()
