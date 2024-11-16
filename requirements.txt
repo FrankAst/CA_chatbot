@@ -2,3 +2,7 @@ python-telegram-bot
 openpyxl
 ipykernel
 pandas
+spacy 
+nltk
+sklearn
+Levenshtein

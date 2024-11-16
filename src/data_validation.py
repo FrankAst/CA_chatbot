@@ -25,7 +25,7 @@ abbreviations_dict = {'BS AS': 'BUENOS AIRES',
 # Funciones
 
 # Validacion de input:
-def val(location, colname, query_type):
+def val(location, colname, query_type, provincia = None):
     
     # Limpiamos el input
     input = pmc.normalizar_texto(location)
@@ -37,8 +37,12 @@ def val(location, colname, query_type):
     
     # Busco match en mis datos
     df = pd.read_csv( str(path / qtype[query_type]))
-    match = pmc.encontrar_provincia_mas_cercana(input, df[colname])
-
+    
+    if provincia is not None:
+          match = pmc.encontrar_provincia_mas_cercana(input, df.loc[df['Provincia']==provincia][colname] )
+    else: match = pmc.encontrar_provincia_mas_cercana(input, df[colname])
+    
+    
     return match
         
 # Busqueda de resultados

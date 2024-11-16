@@ -8,7 +8,8 @@ from telegram.ext import (filters, MessageHandler, Application,
                           CommandHandler, CallbackQueryHandler, ContextTypes,
                           ConversationHandler)
 import data_validation as dv
-import pandas as pd
+import rag as rg
+import time
 from datetime import datetime, timedelta
 
 # Set up logging
@@ -46,8 +47,9 @@ query_type = None #RTV or DTM
 provincia = None
 departamento = None
 localidad = None
+search_flag = 0 # Nos permite buscar solo por provincia cuando no encuentra departamento y localidad
 
-QT, PROV, DEPTO, LOCAL, BUSQUEDA = range(5)
+QT, QNA, PROV, DEPTO, LOCAL, BUSQUEDA = range(6)
 
 ########################### BOT FUNCTIONS ###########################
 
@@ -94,22 +96,48 @@ async def query_type_button(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         response_text = "Para contactarlo con un tecnico de ventas, necesitaremos que nos indique en que provincia se halla:"
         query_type = "RTV"
     else: #query.data == '2'
-        response_text = "Para contactarlo con un delegado tecnico de mercado, necesitaremos que nos indique en que provincia se halla:"
+        response_text = "Quisiera realizarle alguna pregunta tecnica a nuestro bot? De lo contrario tipea /next."
         query_type = "DTM"
     
     await query.edit_message_text(text=response_text)
     logger.info("User %s selected option %s", query.from_user.username, query.data)
     
+    if query_type == "DTM":
+        logger.info("Transitioning to QNA state")
+        return QNA
+    
     logger.info("Transitioning to PROV state")
     
     return PROV
+
+# Q&A DTM Handler
+async def qna_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_query = update.message.text
     
+    if len(user_query) <= 2: # Caso que el cliente responde: si
+        await update.message.reply_text("Por favor indique su pregunta.")
+        return QNA
+    
+    logging.info("Iniciando RAG ..")
+    
+    # Pasamos la query al rag:
+    response = rg.rag(user_query)
+    await update.message.reply_text(response)
+    return QNA
+
+# Transition handler
+async def next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    logging.info("Transicionando a PROV")
+    await update.message.reply_text("Perfecto, indique su provincia:")
+    return PROV
+
 # Provincia handler
 async def province_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     
     logger.info("PROV state started")
     
-    global provincia, query_type
+    global provincia, query_type, search_flag
     
     input = update.message.text
     
@@ -120,11 +148,11 @@ async def province_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
     
     if provincia == 'CIUDAD AUTONOMA DE BUENOS AIRES':
         await update.message.reply_text("Buscando..")
-        return BUSQUEDA
+        return await buscar_rep(update, context)
     
     await update.message.reply_text(
-        f"Perfecto, por favor digame en que departamento de {input},"
-        "se encuentra."
+        f"Perfecto, por favor digame en que departamento de {input}"
+        " se encuentra."
     )
     
     return DEPTO
@@ -136,7 +164,7 @@ async def depto_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     
     input = update.message.text
     # check input with Abel's function.
-    departamento = dv.val(input, 'Departamento / Partido', query_type)
+    departamento = dv.val(input, 'Departamento / Partido', query_type, provincia)
     
     logger.info(f"Departamento de {update.message.from_user.username}: {departamento} ") 
     
@@ -144,11 +172,11 @@ async def depto_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         departamento = None # limpiamos la variable
         provincia = 'CIUDAD AUTONOMA DE BUENOS AIRES' # reasignamos provincia y buscamos.
         await update.message.reply_text("Buscando..")
-        return buscar_rep(update, context)
+        return await buscar_rep(update, context)
     
     await update.message.reply_text(
-        f"Y finalmente, necesitaria saber en que localidad de {input},"
-        "se encuentra."
+        f"Y finalmente, necesitaria saber en que localidad de {input}"
+        " se encuentra."
     )
     
     return LOCAL
@@ -160,56 +188,27 @@ async def local_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     
     input = update.message.text
     # check input with Abel's function.
-    localidad = dv.val(input, 'localidad', query_type)
+    localidad = dv.val(input, 'localidad', query_type, provincia)
     
     logger.info(f"Departamento de {update.message.from_user.username}: {localidad} ") 
     
     await update.message.reply_text(
-        f"Muchas gracias, dejeme buscarle el mejor representante."
+        f"Muchas gracias, dejeme buscarle el mejor representante..."
     )
+    time.sleep(0.5)
     
     return await buscar_rep(update, context)
 
-'''   
-# Busqueda handler
-async def buscar_rep(update: Update, context: ContextTypes.DEFAULT_TYPE): 
-    
-    global provincia, departamento, localidad, query_type
-    
-    results = dv.search(query_type, provincia, departamento, localidad)
-    
-    nombre = results['Nombre'].iloc[0]
-    email = results['e-Mail'].iloc[0]
-    celular = results['Celular'].iloc[0]
-    area = results.filter(like= 'AREA', axis=1)
-    
-    if nombre is not None and not pd.isnull(nombre):
-        await update.message.reply_text(
-            f"Pruebe comunicarse con {nombre}:\n\n"
-            f"Datos: \n"
-            f"Email: {email} \n"
-            f"Celular: {celular} \n\n"
-            f"Area de actuacion: {area}"
-            f"Muchas gracias por su consulta!"
-        )
-    else: 
-        await update.message.reply_text("Lo siento no tenemos nadie en el area.")
-        
-    # Vaciamos las variables
-    provincia = None
-    departamento = None
-    localidad = None
-    query_type = None
-    
-    return ConversationHandler.END
-'''
     
 
 async def buscar_rep(update: Update, context: ContextTypes.DEFAULT_TYPE): 
-    global provincia, departamento, localidad, query_type
+    global provincia, departamento, localidad, query_type, search_flag
     
-    # Perform the search
-    results = dv.search(query_type, provincia, departamento, localidad)
+    
+    # Perform the search - si search_flag = 1 es porque no encontro resultados usando depto y localidad
+    if search_flag == 0:
+            results = dv.search(query_type, provincia, departamento, localidad)
+    else:   results = dv.search(query_type, provincia)
     
     # Chequeamos que haya resultados
     if results is not None and results.shape[0] > 0:
@@ -219,7 +218,7 @@ async def buscar_rep(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result_count = len(results)
         
         # Fijamos un maximo de salidas
-        max_results = 5
+        max_results = 3
         display_count = min(result_count, max_results)
         
         # Iteramos sobre los resultados y acumulamos texto:
@@ -235,24 +234,33 @@ async def buscar_rep(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"Nombre: {nombre}\n"
                 f"Email: {email}\n"
                 f"Celular: {celular}\n"
-                "-----------------------------\n"
+                "-----------------------------\n\n"
+                
             )
-            
+                
             # Unimos mensaje final
             final_message += message
+        
+        saludo = "Para volver consultar clickee /start o para salir /cancel"
+        final_message += saludo
         
         # Enviamos mensaje
         await update.message.reply_text(final_message)
     
     else: 
-        # Enviamos mensaje si results is empty
-        await update.message.reply_text("Lo siento, no tenemos nadie en el área que coincida con su búsqueda.")
+        # Chequeamos el flag:
+        if search_flag == 0:
+            search_flag = 1
+        else: # Si no se encontraron resultados buscando solo con provincia, le avisamos que no hay representantes en su zona.
+            await update.message.reply_text("Lo siento, no tenemos nadie en el área que coincida con su búsqueda. \n"
+                                        "Clickee /start para realizar otra consulta o /cancel para salir")
     
     # Vaciamos las variables
     provincia = None
     departamento = None
     localidad = None
     query_type = None
+    search_flag = 0
     
     # fin
     return ConversationHandler.END
@@ -273,6 +281,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     departamento = None
     localidad = None
     query_type = None
+    search_flag = 0
     
     return ConversationHandler.END
 
@@ -296,6 +305,9 @@ if __name__ == '__main__':
             entry_points = [CommandHandler("start", start)],
             states = {
                     QT: [CallbackQueryHandler(query_type_button)],
+                    QNA:[
+                        MessageHandler(filters.TEXT & (~filters.COMMAND), qna_handler),
+                        CommandHandler("next", next)],
                     PROV: [MessageHandler(filters.TEXT & (~filters.COMMAND), province_ask)],
                     DEPTO: [MessageHandler(filters.TEXT & (~filters.COMMAND), depto_ask)],
                     LOCAL: [MessageHandler(filters.TEXT & (~filters.COMMAND), local_ask)]
