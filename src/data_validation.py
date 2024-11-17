@@ -4,6 +4,14 @@ import provinciamascercana as pmc
 import sys
 from pathlib import Path
 
+# Set up logging
+import logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 # Path de datasets
 directory = Path(__file__).resolve()
 config_path = directory.parent.parent 
@@ -11,8 +19,8 @@ config_path = directory.parent.parent
 #sys.path.append(str(config_path / "datasets" / "processed/") )
 path = config_path / "datasets" / "processed"
 
-qtype = { "RTV": "merged_DTM.csv",
-         "DTM": "merged_RTV.csv"
+qtype = { "RTV": "merged_RTV.csv",
+         "DTM": "merged_DTM.csv"
     }
 
 abbreviations_dict = {'BS AS': 'BUENOS AIRES',
@@ -50,6 +58,9 @@ def search(query_type, provincia, departamento = None, localidad = None ):
     
     # Abro el dataset correspondiente:
     df = pd.read_csv( str(path / qtype[query_type]))
+    
+    logging.info(f"Query type: {query_type}")
+    logging.info(f"Archivo explorado: {str(path / qtype[query_type])}")
     
     # Creo mascara
     filter_mask = (df['Provincia'] == provincia)

@@ -213,12 +213,14 @@ async def buscar_rep(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Chequeamos que haya resultados
     if results is not None and results.shape[0] > 0:
         
+        results = results[~results['Nombre'].duplicated(keep="first")]
+        
         # Iniciamos el mensaje de respuesta
         final_message = "Pruebe comunicarse con: \n\n"
         result_count = len(results)
         
         # Fijamos un maximo de salidas
-        max_results = 3
+        max_results = 4
         display_count = min(result_count, max_results)
         
         # Iteramos sobre los resultados y acumulamos texto:
