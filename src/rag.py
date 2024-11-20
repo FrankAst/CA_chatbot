@@ -153,7 +153,7 @@ def rag(query):
 #query = "Necesito saber como erradicar el nabo en la soja"
 #query = "Como elimino la mosca blanca ayuda"
 
-
+'''
 query = "Como puedo combatir el nabo"
 
 rta = rag(query)
@@ -161,11 +161,14 @@ rta = rag(query)
 logging.info(f"Query: {query}")
 logging.info(f"Respuesta: {rta}")
 
-'''
+
 Q&A models prompt: 
 
  PROMPT_TO_MODEL = {
         'question': f"Por favor, proporciona una respuesta detallada para la pregunta: {query}",
         'context': document
         }
+
+
+
 '''
