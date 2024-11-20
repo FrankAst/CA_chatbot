@@ -3,7 +3,7 @@ import pandas as pd
 import json
 
 # Cargar los datos desde el archivo CSV
-data = pd.read_csv("productos.csv", delimiter=";")
+data = pd.read_csv("datasets/textorag/productos.csv", delimiter=",")
 
 # Crear el grafo dirigido para representar la jerarquía
 G = nx.DiGraph()
@@ -18,15 +18,22 @@ for _, row in data.iterrows():
         G.add_node(row['nme_product'], tipo="producto")
     G.add_edge(row['nme_crop'], row['nme_product'], relacion="tiene_producto")
     
+    '''
     # Crear nodos de plaga y aplicación
     if row['nme_target_scientific'] not in G:
         G.add_node(row['nme_target_scientific'], tipo="plaga")
     G.add_edge(row['nme_product'], row['nme_target_scientific'], relacion="controla")
-
+    '''
+    # Crear nodos de plaga y aplicación
+    if row['nme_target'] not in G:
+        G.add_node(row['nme_target'], tipo="plaga")
+    G.add_edge(row['nme_product'], row['nme_target'], relacion="controla")
+    
+    
     # Crear nodo para momento de aplicación si no es NaN
     if pd.notna(row['dsc_applic_period']):
         G.add_node(row['dsc_applic_period'], tipo="aplicacion")
-        G.add_edge(row['nme_target_scientific'], row['dsc_applic_period'], relacion="momento_aplicacion")
+        G.add_edge(row['nme_target'], row['dsc_applic_period'], relacion="momento_aplicacion")
 
 # Convertir el grafo a formato JSON jerárquico
 grafo_json = {}
@@ -75,7 +82,7 @@ for node in G.nodes:
                     grafo_json[ancestor]["Productos"][grandparent]["Controla a"][parent]["Momento de aplicacion"].append(node)
 
 # Guardar la estructura jerárquica en un archivo JSON
-with open("grafo_hierarquia.json", "w", encoding="utf-8") as file:
+with open("datasets/textorag/grafo_hierarquia.json", "w", encoding="utf-8") as file:
     json.dump(grafo_json, file, indent=4, ensure_ascii=False)
 
 print("Estructura jerárquica guardada en grafo_hierarquia.json")

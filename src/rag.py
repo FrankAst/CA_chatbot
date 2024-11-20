@@ -37,14 +37,15 @@ with open(PATH_TO_CORPUS_TXT, "r", encoding="utf-8") as f:
 ############################### LEVANTAMOS MODELO ###############################
 
 #generation_model_name = "PlanTL-GOB-ES/gpt2-base-bne"
-generation_model_name = "datificate/gpt2-small-spanish"
+#generation_model_name = "mrm8488/distill-bert-base-spanish-wwm-cased-finetuned-spa-squad2-es" #datificate/gpt2-small-spanish"
+generation_model_name = "DeepESP/gpt2-spanish"
 logging.info(f"LLM seleccionado {generation_model_name}")
 
 gen_tokenizer = AutoTokenizer.from_pretrained(generation_model_name)
 
 gen_model = pipeline("text-generation",
                      model=generation_model_name,
-                     #tokenizer=gen_tokenizer,
+                     tokenizer=gen_tokenizer,
                      device=0)  # set device to 0 if using GPU
 
     
@@ -62,6 +63,7 @@ def preprocess_query(query):
     logging.info("Procesando query..")
     # Tokenizar y analizar la consulta
     doc = nlp(query)
+    
     # Lematización y eliminación de stopwords
     lemmatized_tokens = [
         token.lemma_
@@ -82,7 +84,8 @@ def retrieve_document(query, vectorizer, doc_vectors, umbral = 0.10):
     
     logging.info(f"Buscando similitudes..")
     # Vectorizo la query:
-    query_vector = vectorizer.transform([query])
+    #query_vector = vectorizer.transform([query]) # tfidf method
+    query_vector = vectorizer.encode([query]) # BERT method
     
     # Busco similitudes
     similarities = cosine_similarity(query_vector, doc_vectors).flatten()
@@ -94,7 +97,7 @@ def retrieve_document(query, vectorizer, doc_vectors, umbral = 0.10):
     
     # Verificacion de umbral
     if similarity_max < umbral:
-            logging.info(f"La distancia hallada es de {round(similarity_max,2)}")
+            logging.info(f"La distancia hallada es de {similarity_max:.2f}")
             logging.info(f"No se encontró un documento con similitud mayor a {umbral}.")
             
             return "Not found"
@@ -103,25 +106,44 @@ def retrieve_document(query, vectorizer, doc_vectors, umbral = 0.10):
             return documents[most_similar_idx]
     
 
+
+
 # RAG:
 def rag(query):
-    query = preprocess_query(query)
+    query_pp = preprocess_query(query)
     
-    document = retrieve_document(query, vectorizer, doc_vectors)
+    document = retrieve_document(query_pp, vectorizer, doc_vectors)
     
     # Verificamos que el documento supere el umbral establecido
     if document == "Not found": 
         return "No hemos hallado una respuesta adecuada, comuniquese con un experto."
                 
     logging.info(f"Generando respuesta")
-    answer = gen_model(document,
-                       max_length=512,
-                       num_return_sequences=1,
-                       temperature=0.95,
-                       top_k=50,  
-                       top_p=0.9)
     
-    answer = answer[0]["generated_text"].split('.')[0]
+    
+   
+    PROMPT_TO_MODEL = f"""
+    Eres un experto en atencion al cliente, especializado en productos quimicos.
+    Responde la pregunta basandote en el siguiente contexto:
+
+    {document}
+
+    ---
+
+    La pregunta es: {query}
+    """
+    answer = gen_model(PROMPT_TO_MODEL,
+                       max_length= 512,
+                       max_new_tokens = 400,
+                       truncation=True,
+                       num_return_sequences=1,
+                       temperature=0.8,
+                       top_k=20,  
+                       top_p=0.9,
+                       repetition_penalty=1.0,
+                       no_repeat_ngram_size=3)
+    
+    answer = answer[0]["generated_text"].split('"')[1]
     
     return answer
 
@@ -131,12 +153,19 @@ def rag(query):
 #query = "Necesito saber como erradicar el nabo en la soja"
 #query = "Como elimino la mosca blanca ayuda"
 
-'''
-query = "Que producto combate la isoca bolillera en la soja?"
+
+query = "Como puedo combatir el nabo"
 
 rta = rag(query)
 
 logging.info(f"Query: {query}")
 logging.info(f"Respuesta: {rta}")
 
+'''
+Q&A models prompt: 
+
+ PROMPT_TO_MODEL = {
+        'question': f"Por favor, proporciona una respuesta detallada para la pregunta: {query}",
+        'context': document
+        }
 '''
