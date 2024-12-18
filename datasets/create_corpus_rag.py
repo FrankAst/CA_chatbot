@@ -100,7 +100,7 @@ doc_vectors = vectorizer.encode(documents)
 ### Step 4: Guardamos corpus vectorizado y vectorizer.
 
 logging.info("Saving vectorized corpus & Vectorizer.")
-with open("./datasets/textorag/tfidf_vectorizer_and_vectors.pkl", "wb") as f:
+with open("./datasets/textorag/vectorizer_and_vectors.pkl", "wb") as f:
     pickle.dump((vectorizer, doc_vectors), f)
     
 

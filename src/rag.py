@@ -20,7 +20,7 @@ device = "GPU" if torch.cuda.is_available() else "cpu"
 logging.info(f"Torch running on: {device}")
 
 # Path to corpus
-PATH_TO_CORPUS= os.path.abspath('..') + "/datasets/textorag/tfidf_vectorizer_and_vectors.pkl"
+PATH_TO_CORPUS= os.path.abspath('..') + "/datasets/textorag/vectorizer_and_vectors.pkl"
 PATH_TO_CORPUS_TXT = os.path.abspath('..') + "/datasets/textorag/corpus.txt"
 
 # Carga embedding corpus + vectorizer
