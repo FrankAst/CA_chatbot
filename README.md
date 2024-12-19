@@ -42,7 +42,7 @@ En ambos casos, el chatbot recopila la provincia, departamento y localidad del u
 
 ### Instalación
 
-Antes de correr el setup.py es fundamental tener instalado pytorch con la correcta compatiblidad con el driver de cuda - si esta disponible.
+Antes de correr el setup.py es fundamental tener instalado pytorch con la correcta compatiblidad con el driver de cuda - si está disponible.
 Se recomienda crear un virtual environment, clonar el repositorio y luego instalar los paquetes requeridos:
 
 ```bash
@@ -54,11 +54,15 @@ source env_name/bin/activate
 git clone https://github.com/FrankAst/CA_chatbot.git
 cd CA_chatbot
 
-# Ejecute por unica vez:
+# Ejecute por única vez:
 chmod +x setup.py
 
-# Luego ejecute el siguiente archivo bash para correr el pipeline:
+# Luego ejecute por única vez el siguiente archivo bash para correr el pipeline:
 python3 setup.py
+
+# Finalmente
+cd src
+python3 bot_core.py
 ```
 
 ---
@@ -81,6 +85,8 @@ Para iniciar el bot en Telegram el usuario debe tipear /start.
 1. **Consulta Técnica**:
    - El usuario selecciona "Consulta Técnica".
    - El chatbot pregunta si desea enviar una pregunta al bot.
+     Por ejemplo: "Necesito ayuda con la Mosca Blanca", "Cómo combato la isoca bolillera", "Tengo sanguinaria en mi cultivo de avena, qué uso?"
+     Pueden construirse más preguntas eligiendo plagas y cultivos del archivo productos.csv.
    - La consulta se procesa, se compara con la base de conocimientos y se pasa al LLM para una respuesta detallada.
    - La respuesta generada se presenta al usuario.
 
