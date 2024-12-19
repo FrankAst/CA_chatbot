@@ -41,9 +41,15 @@ En ambos casos, el chatbot recopila la provincia, departamento y localidad del u
 - Dependencias adicionales listadas en `requirements.txt`
 
 ### Instalación
-Clona el repositorio e instala los paquetes requeridos:
+
+Antes de correr el setup.py es fundamental tener instalado pytorch con la correcta compatiblidad con el driver de cuda - si esta disponible.
+Se recomienda crear un virtual environment, clonar el repositorio y luego instalar los paquetes requeridos:
 
 ```bash
+# Virtual environment
+virtualenv env_name
+source env_name/bin/activate
+
 # Clonar el repositorio
 git clone https://github.com/FrankAst/CA_chatbot.git
 cd CA_chatbot
