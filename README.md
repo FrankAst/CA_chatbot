@@ -66,6 +66,10 @@ python3 bot_core.py
 ```
 
 El chatbot guiará al usuario a través del proceso de consulta, solicitando la información necesaria (por ejemplo, ubicación) y gestionando las consultas de manera adecuada.
+Para iniciar el bot en Telegram el usuario debe tipear /start. 
+
+### Diagrama de Aplicación
+![Chatbot flow](extra/diagram.jpeg "Diagrama de Aplicación")
 
 ### Flujo de Ejemplo
 1. **Consulta Técnica**:
@@ -78,6 +82,7 @@ El chatbot guiará al usuario a través del proceso de consulta, solicitando la 
    - El usuario selecciona "Consulta Comercial".
    - El chatbot recopila detalles de la ubicación del usuario (provincia, departamento, localidad).
    - Se recupera y comparte el mejor contacto con el usuario.
+
 
 ---
 
