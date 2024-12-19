@@ -6,3 +6,4 @@ spacy
 nltk
 scikit-learn
 Levenshtein
+sentence_transformers
