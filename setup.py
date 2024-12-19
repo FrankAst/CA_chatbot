@@ -119,7 +119,7 @@ def setup_environment():
     logger.info("🔄 Running setup scripts...")
     scripts = [
         "datasets/textorag/generador_grafo.py",
-        "datasets/textorag/create_corpus_rag.py"
+        "datasets/create_corpus_rag.py"
     ]
     
     for script in scripts:
