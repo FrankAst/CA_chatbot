@@ -14,7 +14,7 @@
 ---
 
 ## Introducción
-Este proyecto involucra el desarrollo de un chatbot para una gran empresa agroquímica con el fin de gestionar consultas de clientes de manera eficiente. El chatbot aborda dos tipos principales de consultas:
+Este proyecto involucra el desarrollo de un chatbot para una gran empresa agroquímica con el fin de gestionar consultas de clientes de manera eficiente. El chatbot aborda dos tipos de consultas:
 
 1. **Consultas Técnicas**: Proporciona la opción de enviar una pregunta a un bot especializado para asistencia detallada.
 2. **Consultas Comerciales**: Dirige a los usuarios al contacto adecuado para preguntas relacionadas con ventas.
