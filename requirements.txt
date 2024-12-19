@@ -4,5 +4,5 @@ ipykernel
 pandas
 spacy 
 nltk
-sklearn
+scikit-learn
 Levenshtein
